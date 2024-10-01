@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <style>
+        body {
+            background-color: #297571;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        canvas {
+            border: 2px solid #ffffff;
+        }
+        #backButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ffffff;
+            color: #297571;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="webgl1" width="1000" height="1000"></canvas>
+    <div id="scoreboard"></div>
+    <button id="backButton">Back to Menu</button>
+
+    <!-- Inclusion de games.js -->
+    <script type="module">
+        import { main } from './games.js';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            // Charger les options de jeu depuis localStorage
+            const gameOptions = JSON.parse(localStorage.getItem('gameOptions'));
+
+            // Vérifier si les options existent avant de lancer le jeu
+            if (gameOptions) {
+                const { mode, playerNames, playerKeys, maxScore, paddleSpeed, paddleSize, bounceMode, ballSpeed, ballAcceleration, numBalls, map } = gameOptions;
+
+                // Appeler la fonction main avec les options de jeu et les touches des joueurs
+                main(
+                    mode,                           // Mode de jeu
+                    playerNames,                    // Noms des joueurs (déjà un tableau)
+                    playerKeys,                     // Touches des joueurs (tableau)
+                    parseInt(maxScore),             // Score maximum
+                    parseInt(paddleSpeed),          // Vitesse des paddles
+                    parseInt(paddleSize),           // Taille des paddles
+                    bounceMode,                     // Mode rebond
+                    parseInt(ballSpeed),            // Vitesse de la balle
+                    parseInt(ballAcceleration),     // Accélération de la balle
+                    parseInt(numBalls),             // Nombre de balles
+                    parseInt(map)                   // Carte
+                );
+            } else {
+                alert("No game options found!");
+            }
+        });
+
+        // Gestion du clic sur le bouton "Back to Menu"
+        document.getElementById('backButton').addEventListener('click', () => {
+            window.location.href = '../index.html';
+        });
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Options</title>
+    <style>
+        body {
+            background-color: #297571;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .player-controls {
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            max-width: 200px;
+            margin-bottom: 5px;
+        }
+        label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Configure Your Game</h1>
+    <div id="controls">
+        <label for="mode">Game Mode:</label>
+        <select id="mode">
+            <option value="versus">Versus</option>
+            <option value="tournament">Tournament</option>
+            <option value="lastManStanding">Last Man Standing</option>
+            <option value="brickBreaker">Brick Breaker</option>
+        </select><br>
+
+        <div id="player-controls-wrapper"></div>
+        <div id="player-key-wrapper"></div>
+
+        <button id="addPlayer">Add Player</button>
+        <button id="removePlayer">Remove Player</button><br>
+
+        <label for="maxScore">Max Score:</label>
+        <input type="range" id="maxScore" min="1" max="100" value="10" step="1"><span id="maxScoreValue">10</span><br>
+
+        <label for="paddleSpeed">Paddle Speed:</label>
+        <input type="range" id="paddleSpeed" min="1" max="30" value="5" step="1"><span id="paddleSpeedValue">5</span><br>
+
+        <label for="paddleSize">Paddle Size:</label>
+        <input type="range" id="paddleSize" min="20" max="150" value="100" step="1"><span id="paddleSizeValue">100</span><br>
+
+        <label for="bounceMode">Bounce Mode:</label>
+        <input type="checkbox" id="bounceMode" checked><br>
+
+        <label for="ballSpeed">Ball Speed:</label>
+        <input type="range" id="ballSpeed" min="1" max="10" value="5" step="1"><span id="ballSpeedValue">5</span><br>
+
+        <label for="ballAcceleration">Ball Acceleration:</label>
+        <input type="range" id="ballAcceleration" min="0" max="5" value="1" step="1"><span id="ballAccelerationValue">1</span><br>
+
+        <label for="numBalls">Number of Balls:</label>
+        <input type="range" id="numBalls" min="1" max="10" value="1" step="1"><span id="numBallsValue">1</span><br>
+
+        <label for="map">Map:</label>
+        <input type="range" id="map" min="1" max="5" value="1" step="1"><span id="mapValue">1</span><br>
+
+        <button id="defaultSetting">Default Setting</button><br>
+
+        <button id="startGame">Start Game</button>
+    </div>
+
+    <script>
+        const MIN_PLAYERS = 2;
+        const VERSUS_MAX = 4;
+        const TOURNAMENT_MAX = 10;
+        const LASTMANSTANDING_MAX = 4;
+        const BRICKBREAKER_MAX = 4;
+
+        document.getElementById('mode').addEventListener('change', updateOptions);
+        document.getElementById('addPlayer').addEventListener('click', addPlayer);
+        document.getElementById('removePlayer').addEventListener('click', removePlayer);
+
+        document.getElementById('maxScore').addEventListener('input', () => {
+            document.getElementById('maxScoreValue').textContent = document.getElementById('maxScore').value;
+        });
+        document.getElementById('paddleSpeed').addEventListener('input', () => {
+            document.getElementById('paddleSpeedValue').textContent = document.getElementById('paddleSpeed').value;
+        });
+        document.getElementById('paddleSize').addEventListener('input', () => {
+            document.getElementById('paddleSizeValue').textContent = document.getElementById('paddleSize').value;
+        });
+        document.getElementById('ballSpeed').addEventListener('input', () => {
+            document.getElementById('ballSpeedValue').textContent = document.getElementById('ballSpeed').value;
+        });
+        document.getElementById('ballAcceleration').addEventListener('input', () => {
+            document.getElementById('ballAccelerationValue').textContent = document.getElementById('ballAcceleration').value;
+        });
+        document.getElementById('numBalls').addEventListener('input', () => {
+            document.getElementById('numBallsValue').textContent = document.getElementById('numBalls').value;
+        });
+        document.getElementById('map').addEventListener('input', () => {
+            document.getElementById('mapValue').textContent = document.getElementById('map').value;
+        });
+
+        function updateOptions() {
+            const mode = document.getElementById('mode').value;
+            const maxScoreField = document.getElementById('maxScore');
+            document.getElementById('player-controls-wrapper').innerHTML = '';
+            document.getElementById('player-key-wrapper').innerHTML = '';
+
+            let initialPlayers = MIN_PLAYERS;
+            let maxPlayers = getMaxPlayersForMode(mode);
+
+            if (mode === 'brickBreaker') {
+                maxScoreField.disabled = true;
+                document.getElementById('maxScoreValue').textContent = 'N/A';
+            } else {
+                maxScoreField.disabled = false;
+                document.getElementById('maxScoreValue').textContent = maxScoreField.value;
+            }
+
+            let numberOfControls = mode === 'tournament' ? 2 : initialPlayers;
+            for (let i = 0; i < numberOfControls; i++) {
+                addPlayerField(i);
+            }
+
+            updateAddPlayerButton();
+            updateRemovePlayerButton();
+        }
+
+
+        function getPlayersToAddOrRemove(mode) {
+            return (mode === 'versus' || mode === 'brickBreaker') ? 2 : 1;
+        }
+
+        function addPlayer() {
+            const mode = document.getElementById('mode').value;
+            const maxPlayers = getMaxPlayersForMode(mode);
+            const playerFields = document.getElementsByClassName('player-control');
+
+            let toAdd = getPlayersToAddOrRemove(mode);
+            const currentPlayers = playerFields.length;
+            for (let i = 0; i < toAdd; i++) {
+                if (currentPlayers + i < maxPlayers) {
+                    addPlayerField(currentPlayers + i);
+                }
+            }
+
+            updateAddPlayerButton();
+            updateRemovePlayerButton();
+        }
+
+        function removePlayer() {
+            const mode = document.getElementById('mode').value;
+            const playerFields = document.getElementsByClassName('player-control');
+            const keyFields = document.getElementsByClassName('player-controls');
+
+            let toRemove = getPlayersToAddOrRemove(mode);
+
+            for (let i = 0; i < toRemove; i++) {
+                if (playerFields.length > MIN_PLAYERS) {
+                    playerFields[playerFields.length - 1].remove();
+
+                    // Si le mode n'est pas 'tournament', on enlève aussi les champs d'assignation de touches
+                    if (mode !== 'tournament') {
+                        keyFields[keyFields.length - 1].remove();
+                    }
+                }
+            }
+
+            updateAddPlayerButton();
+            updateRemovePlayerButton();
+        }
+
+
+        function addPlayerField(index) {
+            const controlsWrapper = document.getElementById('player-controls-wrapper');
+            const keyWrapper = document.getElementById('player-key-wrapper');
+            const divPlayer = document.createElement('div');
+            const divKeys = document.createElement('div');
+
+            divPlayer.classList.add('player-control');
+            divPlayer.innerHTML = `
+                <label>Player ${index + 1} Name:</label>
+                <input type="text" id="player${index}" placeholder="Enter player name"><br>
+            `;
+            controlsWrapper.appendChild(divPlayer);
+
+            // Si le mode est "tournament", on limite à 2 champs d'assignation de touches
+            const mode = document.getElementById('mode').value;
+            if (mode !== 'tournament' || index < 2) {
+                divKeys.classList.add('player-controls');
+                divKeys.innerHTML = `
+                    <label>Up Key for Player ${index + 1}:</label>
+                    <input type="text" id="player${index}Up" placeholder="Enter Up key"><br>
+                    <label>Down Key for Player ${index + 1}:</label>
+                    <input type="text" id="player${index}Down" placeholder="Enter Down key"><br>
+                `;
+                keyWrapper.appendChild(divKeys);
+            }
+        }
+
+        function updateAddPlayerButton() {
+            const mode = document.getElementById('mode').value;
+            const maxPlayers = getMaxPlayersForMode(mode);
+            const playerFields = document.getElementsByClassName('player-control');
+
+            if (playerFields.length >= maxPlayers) {
+                document.getElementById('addPlayer').style.display = 'none';
+            } else {
+                document.getElementById('addPlayer').style.display = 'inline';
+            }
+        }
+
+        function updateRemovePlayerButton() {
+            const playerFields = document.getElementsByClassName('player-control');
+            if (playerFields.length <= MIN_PLAYERS) {
+                document.getElementById('removePlayer').style.display = 'none';
+            } else {
+                document.getElementById('removePlayer').style.display = 'inline';
+            }
+        }
+
+        function getMaxPlayersForMode(mode) {
+            switch (mode) {
+                case 'versus':
+                case 'brickBreaker':
+                    return VERSUS_MAX;
+                case 'tournament':
+                    return TOURNAMENT_MAX;
+                case 'lastManStanding':
+                    return LASTMANSTANDING_MAX;
+                default:
+                    return 4;
+            }
+        }
+
+        updateOptions();
+
+        document.getElementById('startGame').addEventListener('click', () => {
+            const mode = document.getElementById('mode').value;
+            const playerFields = document.getElementsByClassName('player-control');
+
+            let allFieldsValid = true;
+            for (let i = 0; i < playerFields.length; i++) {
+                const playerName = document.getElementById(`player${i}`).value.trim();
+                const upKey = document.getElementById(`player${i}Up`).value.trim();
+                const downKey = document.getElementById(`player${i}Down`).value.trim();
+                if (!playerName || !upKey || !downKey) {
+                    allFieldsValid = false;
+                    alert(`Player ${i + 1} must have a name and keys assigned!`);
+                    break;
+                }
+            }
+
+            if (allFieldsValid) {
+                const playerNames = [];
+                const playerKeys = [];
+                for (let i = 0; i < playerFields.length; i++) {
+                    const playerName = document.getElementById(`player${i}`).value;
+                    const upKey = document.getElementById(`player${i}Up`).value;
+                    const downKey = document.getElementById(`player${i}Down`).value;
+                    playerNames.push(playerName);
+                    playerKeys.push([upKey, downKey]);
+                }
+
+                const maxScore = document.getElementById('maxScore').value;
+                const paddleSpeed = document.getElementById('paddleSpeed').value;
+                const paddleSize = document.getElementById('paddleSize').value;
+                const bounceMode = document.getElementById('bounceMode').checked;
+                const ballSpeed = document.getElementById('ballSpeed').value;
+                const ballAcceleration = document.getElementById('ballAcceleration').value;
+                const numBalls = document.getElementById('numBalls').value;
+                const map = document.getElementById('map').value;
+
+                localStorage.setItem('gameOptions', JSON.stringify({
+                    mode, playerNames, playerKeys, maxScore, paddleSpeed, paddleSize, bounceMode, ballSpeed, ballAcceleration, numBalls, map
+                }));
+
+                window.location.href = 'game/game.html';
+            }
+        });
+
+        function resetToDefault() {
+            document.getElementById('maxScore').value = 10;
+            document.getElementById('maxScoreValue').textContent = 10;
+
+            document.getElementById('paddleSpeed').value = 5;
+            document.getElementById('paddleSpeedValue').textContent = 5;
+
+            document.getElementById('paddleSize').value = 100;
+            document.getElementById('paddleSizeValue').textContent = 100;
+
+            document.getElementById('bounceMode').checked = true;
+
+            document.getElementById('ballSpeed').value = 5;
+            document.getElementById('ballSpeedValue').textContent = 5;
+
+            document.getElementById('ballAcceleration').value = 1;
+            document.getElementById('ballAccelerationValue').textContent = 1;
+
+            document.getElementById('numBalls').value = 1;
+            document.getElementById('numBallsValue').textContent = 1;
+
+            document.getElementById('map').value = 1;
+            document.getElementById('mapValue').textContent = 1;
+        }
+
+        document.getElementById('defaultSetting').addEventListener('click', resetToDefault);
+    </script>
+</body>
+</html>
+
+
+
+
+
