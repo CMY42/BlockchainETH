@@ -12,6 +12,153 @@ import { map4 } from '../scenes/maps/VS.js';
 // Déclaration de la variable pour le contrat
 let tournamentContract;
 
+// Remplacer ce tableau par l'ABI que vous avez dans le fichier TournamentScore.json
+const contractABI = [
+    {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "indexed": false,
+            "internalType": "uint256",
+            "name": "score",
+            "type": "uint256"
+          }
+        ],
+        "name": "PlayerAdded",
+        "type": "event"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "name": "players",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "score",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string",
+            "name": "_name",
+            "type": "string"
+          }
+        ],
+        "name": "addPlayer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "uint256",
+            "name": "_index",
+            "type": "uint256"
+          }
+        ],
+        "name": "getPlayerScore",
+        "outputs": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "score",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
+      },
+      {
+        "inputs": [],
+        "name": "getTotalPlayers",
+        "outputs": [
+          {
+            "internalType": "uint256",
+            "name": "",
+            "type": "uint256"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
+      },
+      {
+        "inputs": [],
+        "name": "getAllPlayers",
+        "outputs": [
+          {
+            "components": [
+              {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+              },
+              {
+                "internalType": "uint256",
+                "name": "score",
+                "type": "uint256"
+              }
+            ],
+            "internalType": "struct TournamentScore.Player[]",
+            "name": "",
+            "type": "tuple[]"
+          }
+        ],
+        "stateMutability": "view",
+        "type": "function",
+        "constant": true
+      },
+      {
+        "inputs": [
+          {
+            "internalType": "string[]",
+            "name": "playerNames",
+            "type": "string[]"
+          },
+          {
+            "internalType": "uint256[]",
+            "name": "scores",
+            "type": "uint256[]"
+          }
+        ],
+        "name": "finalizeTournament",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+];
+
+// Adresse du contrat
+const contractAddress = '0xc5b736a3c638951721ae238561Fa876041d2Bcc5';
+
 // Fonction pour charger Web3
 function chargerWeb3() {
     return new Promise((resolve, reject) => {
@@ -47,21 +194,17 @@ async function initWeb3() {
         window.web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
     }
 
-    const tournamentContractJSON = await fetch('http://127.0.0.1:5500/build/contracts/TournamentScore.json')
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        });
-
-    const contractABI = tournamentContractJSON.abi;
-    const networkId = Object.keys(tournamentContractJSON.networks)[0];
-    const contractAddress = tournamentContractJSON.networks[networkId]?.address;
-
+    // Vérifier que l'ABI et l'adresse du contrat sont valides
+    if (!contractABI || contractABI.length === 0) {
+        throw new Error('ABI non définie ou vide.');
+    }
     if (!contractAddress) {
-        throw new Error('Contract address not found. Make sure the contract is deployed to the specified network.');
+        throw new Error('Adresse du contrat non définie.');
     }
 
+    // Initialiser le contrat
     tournamentContract = new web3.eth.Contract(contractABI, contractAddress);
+    console.log('Contrat initialisé avec succès:', tournamentContract);
 }
 
 // Fonction pour récupérer le compte utilisateur
@@ -77,7 +220,7 @@ async function enregistrerScoresFinTournoi(joueurs, scores) {
         const scoresArray = Array.isArray(scores) ? scores : Object.values(scores);
 
         await tournamentContract.methods.finalizeTournament(joueurs, scoresArray)
-            .send({ from: compte, gas: 500000 });
+            .send({ from: compte, gas: 1000000 });
 
         console.log('Scores enregistrés avec succès');
     } catch (error) {
@@ -88,22 +231,17 @@ async function enregistrerScoresFinTournoi(joueurs, scores) {
 // Fonction corrigée pour afficher tous les joueurs et leurs scores
 async function afficherTousLesScores() {
     try {
-        // Récupérer le nombre total de joueurs
         const totalPlayers = await tournamentContract.methods.getTotalPlayers().call();
         console.log(`Nombre total de joueurs : ${totalPlayers}`);
 
-        // Boucler sur chaque joueur et récupérer son nom et son score
         for (let i = 0; i < totalPlayers; i++) {
             const result = await tournamentContract.methods.getPlayerScore(i).call();
             console.log('Résultat brut de getPlayerScore:', result);
 
-            // Vérifiez si le résultat est un tableau avec 2 éléments
-            if (Array.isArray(result) && result.length === 2) {
-                const [name, score] = result;
-                console.log(`Joueur ${i + 1}: ${name}, Score: ${score}`);
-            } else {
-                console.error(`Erreur de format: getPlayerScore a retourné un résultat inattendu pour l'index ${i}`, result);
-            }
+            // Utiliser les propriétés 'name' et 'score' de l'objet retourné
+            const name = result[0]; // ou result.name
+            const score = result[1]; // ou result.score
+            console.log(`Joueur ${i + 1}: ${name}, Score: ${score}`);
         }
     } catch (error) {
         console.error('Erreur lors de la récupération des scores:', error);

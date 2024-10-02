@@ -32,12 +32,26 @@ contract TournamentScore {
         return players;
     }
 
-    function finalizeTournament(string[] memory playerNames, uint[] memory scores) public {
-        require(playerNames.length == scores.length, "Les tableaux doivent avoir la meme longueur");
-        for (uint i = 0; i < playerNames.length; i++) {
-            require(bytes(playerNames[i]).length > 0, "Le nom ne peut pas etre vide");
+   function finalizeTournament(string[] memory playerNames, uint[] memory scores) public {
+    require(playerNames.length == scores.length, "Les tableaux doivent avoir la meme longueur");
+    for (uint i = 0; i < playerNames.length; i++) {
+        require(bytes(playerNames[i]).length > 0, "Le nom ne peut pas etre vide");
+
+        // Rechercher le joueur par son nom et mettre à jour son score
+        bool found = false;
+        for (uint j = 0; j < players.length; j++) {
+            if (keccak256(bytes(players[j].name)) == keccak256(bytes(playerNames[i]))) {
+                players[j].score = scores[i];
+                found = true;
+                break;
+            }
+        }
+
+        // Si le joueur n'est pas trouvé, l'ajouter
+        if (!found) {
             players.push(Player(playerNames[i], scores[i]));
-            emit PlayerAdded(playerNames[i], scores[i]); // Emettre un événement après l'ajout d'un joueur avec son score
+            emit PlayerAdded(playerNames[i], scores[i]);
         }
     }
+}
 }
