@@ -32,16 +32,16 @@ contract TournamentScore {
         return players;
     }
 
-   function finalizeTournament(string[] memory playerNames, uint[] memory scores) public {
+function finalizeTournament(string[] memory playerNames, uint[] memory scores) public {
     require(playerNames.length == scores.length, "Les tableaux doivent avoir la meme longueur");
     for (uint i = 0; i < playerNames.length; i++) {
         require(bytes(playerNames[i]).length > 0, "Le nom ne peut pas etre vide");
 
-        // Rechercher le joueur par son nom et mettre à jour son score
+        // Rechercher le joueur par son nom et mettre à jour son score cumulatif
         bool found = false;
         for (uint j = 0; j < players.length; j++) {
             if (keccak256(bytes(players[j].name)) == keccak256(bytes(playerNames[i]))) {
-                players[j].score = scores[i];
+                players[j].score += scores[i];  // Ajouter le nouveau score à l'ancien
                 found = true;
                 break;
             }
